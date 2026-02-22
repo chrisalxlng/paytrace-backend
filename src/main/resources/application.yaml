@@ -1,0 +1,30 @@
+spring:
+  application:
+    name: paytrace
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/paytrace}
+    username: ${SPRING_DATASOURCE_USERNAME:paytrace}
+    password: ${SPRING_DATASOURCE_PASSWORD:paytrace}
+  jpa:
+    hibernate:
+      ddl-auto: update
+  flyway:
+    enabled: true
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI:http://localhost:8080/realms/apps}
+          jwk-set-uri: ${SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI:http://localhost:8080/realms/apps/protocol/openid-connect/certs}
+
+springdoc:
+  swagger-ui:
+    enabled: ${SPRINGDOC_SWAGGER_UI_ENABLED:true}
+  api-docs:
+    enabled: ${SPRINGDOC_API_DOCS_ENABLED:true}
+
+server:
+  port: ${SERVER_PORT:8081}
+
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}

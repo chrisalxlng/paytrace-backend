@@ -1,0 +1,13 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run Spring Boot",
+      "type": "java",
+      "request": "launch",
+      "mainClass": "dev.christopherlang.paytrace.Application",
+      "projectName": "paytrace-backend",
+      "preLaunchTask": "maven: package"
+    }
+  ]
+}

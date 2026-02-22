@@ -1,0 +1,25 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "maven: package",
+      "type": "shell",
+      "command": "mvn",
+      "args": [
+        "clean",
+        "package",
+        "-DskipTests"
+      ],
+      "options": {
+        "env": {
+          "JAVA_HOME": "/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home",
+          "PATH": "${env:PATH}"
+        }
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    }
+  ]
+}
