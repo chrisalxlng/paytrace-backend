@@ -1,0 +1,8 @@
+CREATE TABLE users (
+    user_id VARCHAR(255) PRIMARY KEY,
+    is_demo BOOLEAN NOT NULL DEFAULT FALSE
+);
+
+ALTER TABLE payrolls
+ADD CONSTRAINT fk_payrolls_user_id
+FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE;
