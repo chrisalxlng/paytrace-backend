@@ -206,7 +206,12 @@ public class DatevPayrollParserProvider implements PayrollParser {
                     PayrollEntry
                         .builder()
                         .type(PayrollEntryType.BASE_LONG_TERM_CARE_INSURANCE)
-                        .amount(longTermCareInsuranceBase.add(longTermCareInsuranceBonus))
+                        .amount(longTermCareInsuranceBase)
+                        .build(),
+                    PayrollEntry
+                        .builder()
+                        .type(PayrollEntryType.BONUS_LONG_TERM_CARE_INSURANCE)
+                        .amount(longTermCareInsuranceBonus)
                         .build()
                     )
                 )
