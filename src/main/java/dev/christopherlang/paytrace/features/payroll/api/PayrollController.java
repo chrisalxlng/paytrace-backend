@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import dev.christopherlang.paytrace.common.UserContext;
 import dev.christopherlang.paytrace.features.payroll.domain.Payroll;
 import dev.christopherlang.paytrace.features.payroll.domain.PayrollGroups;
 import dev.christopherlang.paytrace.features.payroll.domain.PayrollSearchCriteria;
@@ -36,11 +37,13 @@ public class PayrollController {
     private final PayrollApiMapper payrollApiMapper;
     private final PayrollService payrollService;
     private final PayrollStatsService payrollStatsService;
+    private final UserContext userContext;
 
     @GetMapping
     public ResponseEntity<GetPayrollsResponse> getMultiple(@Valid GetPayrollsRequest request) {
         PayrollSearchCriteria criteria = payrollApiMapper.toCriteria(request);
-        PayrollGroups groups = payrollService.getMultiple(criteria);
+        String userId = userContext.getUserId();
+        PayrollGroups groups = payrollService.getMultiple(userId, criteria);
         GetPayrollsResponse response = payrollApiMapper.toResponse(groups);
 
         return ResponseEntity.ok(response);
@@ -48,7 +51,8 @@ public class PayrollController {
 
     @GetMapping(path = "/{payrollId}")
     public ResponseEntity<GetPayrollResponse> getSingle(@PathVariable UUID payrollId) {
-        Payroll payroll = payrollService.getById(payrollId);
+        String userId = userContext.getUserId();
+        Payroll payroll = payrollService.getById(userId, payrollId);
         GetPayrollResponse response = payrollApiMapper.toPayrollResponse(payroll);
 
         return ResponseEntity.ok(response);
@@ -58,8 +62,11 @@ public class PayrollController {
     public ResponseEntity<?> upload(
             @ModelAttribute CreatePayrollFileRequest request
     ) {
-        Payroll payroll = payrollFileProcessor.processFile(request.getFile());
-        payrollService.create(payroll);
+        Payroll parsedPayroll = payrollFileProcessor.processFile(request.getFile());
+        String userId = userContext.getUserId();
+        Payroll payrollWithUser = parsedPayroll.withUserId(userId);
+
+        payrollService.create(payrollWithUser);
 
         return ResponseEntity.ok(null);
     }
@@ -67,7 +74,9 @@ public class PayrollController {
     @PostMapping(path = "/create")
     public ResponseEntity<?> create(@Valid @RequestBody CreatePayrollRequest request) {
         Payroll payroll = payrollApiMapper.toPayroll(request);
-        payrollService.create(payroll);
+        String userId = userContext.getUserId();
+        Payroll payrollWithUser = payroll.withUserId(userId);
+        payrollService.create(payrollWithUser);
 
         return ResponseEntity.ok(null);
     }
@@ -83,7 +92,8 @@ public class PayrollController {
     @PostMapping(path = "/stats")
     public ResponseEntity<List<PayrollStatsResponse>> getStats(@Valid @RequestBody List<PayrollStatsRequest> requests) {
         List<PayrollStatsQuery> queries = requests.stream().map(payrollApiMapper::toStatsQuery).toList();
-        List<PayrollStats> stats = payrollStatsService.calculateStats(queries);
+        String userId = userContext.getUserId();
+        List<PayrollStats> stats = payrollStatsService.calculateStats(userId, queries);
         List<PayrollStatsResponse> responses = stats.stream().map(payrollApiMapper::toStatsResponse).toList();
 
         return ResponseEntity.ok(responses);
@@ -91,18 +101,21 @@ public class PayrollController {
 
     @GetMapping(path = "/has-inconsistent")
     public ResponseEntity<Boolean> hasInconsistent() {
-        return ResponseEntity.ok(payrollService.hasInconsistentPayrolls());
+        String userId = userContext.getUserId();
+        return ResponseEntity.ok(payrollService.hasInconsistentPayrolls(userId));
     }
 
     @GetMapping(path = "/exists-period")
     public ResponseEntity<Boolean> existsAccountingPeriod(@RequestParam String accountingPeriod) {
         YearMonth period = YearMonth.parse(accountingPeriod);
-        return ResponseEntity.ok(payrollService.existsAccountingPeriod(period));
+        String userId = userContext.getUserId();
+        return ResponseEntity.ok(payrollService.existsAccountingPeriod(userId, period));
     }
 
     @PostMapping(path = "/delete")
     public ResponseEntity<?> delete(@Valid @RequestBody DeletePayrollRequest request) {
-        payrollService.delete(request.getPayrollId());
+        String userId = userContext.getUserId();
+        payrollService.delete(userId, request.getPayrollId());
         return ResponseEntity.ok(null);
     }
 

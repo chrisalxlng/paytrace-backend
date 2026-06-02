@@ -13,7 +13,6 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
-import dev.christopherlang.paytrace.common.UserContext;
 import dev.christopherlang.paytrace.features.payroll.domain.PayrollStats.MonthlyStats;
 import dev.christopherlang.paytrace.features.payroll.domain.PayrollStats.YearlyStats;
 import lombok.RequiredArgsConstructor;
@@ -23,9 +22,8 @@ import lombok.RequiredArgsConstructor;
 public class PayrollStatsService {
 
     private final PayrollRepository payrollRepository;
-    private final UserContext userContext;
 
-    public List<PayrollStats> calculateStats(List<PayrollStatsQuery> queries) {
+    public List<PayrollStats> calculateStats(String userId, List<PayrollStatsQuery> queries) {
 
         YearMonth start = calculateMinStart(queries);
         YearMonth end = calculateMaxEnd(queries);
@@ -35,7 +33,6 @@ public class PayrollStatsService {
             .flatMap(q -> q.getMetric().getTypes().stream())
             .collect(Collectors.toSet());
 
-        String userId = userContext.getUserId();
         List<RawPayrollData> rawData = payrollRepository.findRawData(userId, dbStart, end, requiredTypes);
 
         return queries.stream().map(query -> buildStatsForQuery(query, rawData)).toList();

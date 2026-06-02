@@ -84,6 +84,11 @@ public class PayrollRepositoryImpl implements PayrollRepository {
     }
 
     @Override
+    public void deleteByUserId(String userId) {
+       jpaRepo.deleteByUserId(userId);
+    }
+
+    @Override
     public boolean hasInconsistentPayrolls(String userId) {
         return jpaRepo.hasInconsistentPayrolls(userId);
     }

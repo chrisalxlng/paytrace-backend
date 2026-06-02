@@ -1,5 +1,6 @@
 package dev.christopherlang.paytrace.features.user.data;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.stereotype.Repository;
@@ -25,6 +26,13 @@ public class UserRepositoryImpl implements UserRepository {
     public Optional<User> findById(String userId) {
         return jpaRepo.findById(userId)
             .map(mapper::toUser);
+    }
+
+    @Override
+    public List<User> findByIsDemo(boolean demo) {
+        return jpaRepo.findByIsDemo(demo)
+            .stream()
+            .map(mapper::toUser).toList();
     }
 
 }

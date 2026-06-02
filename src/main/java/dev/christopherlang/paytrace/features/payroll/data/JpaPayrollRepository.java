@@ -70,4 +70,6 @@ public interface JpaPayrollRepository extends JpaRepository<PayrollEntity, UUID>
         """, nativeQuery = true)
     boolean hasInconsistentPayrolls(@Param("userId") String userId);
 
+    void deleteByUserId(String userId);
+
 }

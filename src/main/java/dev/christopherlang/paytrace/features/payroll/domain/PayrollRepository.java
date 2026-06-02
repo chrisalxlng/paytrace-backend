@@ -19,6 +19,8 @@ public interface PayrollRepository {
 
     void deleteById(String userId, UUID payrollId);
 
+    void deleteByUserId(String userId);
+
     boolean hasInconsistentPayrolls(String userId);
 
 }

@@ -1,6 +1,7 @@
 package dev.christopherlang.paytrace.features.payroll.domain;
 
 import java.math.BigDecimal;
+import java.time.YearMonth;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -8,7 +9,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import dev.christopherlang.paytrace.common.BusinessException;
 import dev.christopherlang.paytrace.common.ErrorCode;
-import dev.christopherlang.paytrace.common.UserContext;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -16,7 +16,6 @@ import lombok.RequiredArgsConstructor;
 public class PayrollService {
 
     private final PayrollRepository payrollRepository;
-    private final UserContext userContext;
 
     @Transactional
     public void create(Payroll payroll) {
@@ -24,20 +23,12 @@ public class PayrollService {
             throw new BusinessException(ErrorCode.DUPLICATE_PAYROLL_ENTRY);
         }
 
-        String userId = userContext.getUserId();
-        if (payrollRepository.existsByAccountingPeriod(userId, payroll.accountingPeriod())) {
+        if (payrollRepository.existsByAccountingPeriod(payroll.userId(), payroll.accountingPeriod())) {
             throw new BusinessException(ErrorCode.DUPLICATE_ACCOUNTING_PERIOD);
         }
 
         BigDecimal consistencyDeviation = calculateConsistencyDeviation(payroll.payout(), payroll.entries());
-        Payroll payrollWithDeviation = Payroll.builder()
-            .payrollId(payroll.payrollId())
-            .userId(userId)
-            .accountingPeriod(payroll.accountingPeriod())
-            .payout(payroll.payout())
-            .consistencyDeviation(consistencyDeviation)
-            .entries(payroll.entries())
-            .build();
+        Payroll payrollWithDeviation = payroll.withConsistencyDeviation(consistencyDeviation);
 
         payrollRepository.save(payrollWithDeviation);
     }
@@ -48,50 +39,44 @@ public class PayrollService {
             throw new BusinessException(ErrorCode.DUPLICATE_PAYROLL_ENTRY);
         }
 
-        String userId = userContext.getUserId();
-        Payroll existing = getById(payroll.payrollId());
+        Payroll existing = getById(payroll.userId(), payroll.payrollId());
         BigDecimal consistencyDeviation = calculateConsistencyDeviation(payroll.payout(), payroll.entries());
 
-        Payroll merged = Payroll.builder()
-            .payrollId(payroll.payrollId())
-            .userId(userId)
-            .accountingPeriod(existing.accountingPeriod())
-            .payout(payroll.payout())
-            .consistencyDeviation(consistencyDeviation)
-            .entries(payroll.entries())
-            .build();
+        Payroll payrollWithDeviation = payroll.withConsistencyDeviation(consistencyDeviation);
+        Payroll payrollWithPeriod = payrollWithDeviation.withAccountingPeriod(existing.accountingPeriod());
 
-        payrollRepository.save(merged);
+        payrollRepository.save(payrollWithPeriod);
     }
 
     @Transactional
-    public Payroll getById(UUID payrollId) {
-        String userId = userContext.getUserId();
+    public Payroll getById(String userId, UUID payrollId) {
         return payrollRepository.findById(userId, payrollId);
     }
 
     @Transactional
-    public PayrollGroups getMultiple(PayrollSearchCriteria criteria) {
-        String userId = userContext.getUserId();
+    public PayrollGroups getMultiple(String userId, PayrollSearchCriteria criteria) {
+
         return payrollRepository.findGrouped(userId, criteria);
     }
 
     @Transactional(readOnly = true)
-    public boolean hasInconsistentPayrolls() {
-        String userId = userContext.getUserId();
+    public boolean hasInconsistentPayrolls(String userId) {
         return payrollRepository.hasInconsistentPayrolls(userId);
     }
 
     @Transactional(readOnly = true)
-    public boolean existsAccountingPeriod(java.time.YearMonth accountingPeriod) {
-        String userId = userContext.getUserId();
+    public boolean existsAccountingPeriod(String userId, YearMonth accountingPeriod) {
         return payrollRepository.existsByAccountingPeriod(userId, accountingPeriod);
     }
 
     @Transactional
-    public void delete(UUID payrollId) {
-        String userId = userContext.getUserId();
+    public void delete(String userId, UUID payrollId) {
         payrollRepository.deleteById(userId, payrollId);
+    }
+
+    @Transactional
+    public void deleteByUserId(String userId) {
+        payrollRepository.deleteByUserId(userId);
     }
 
     private BigDecimal calculateConsistencyDeviation(BigDecimal payout, java.util.List<PayrollEntry> entries) {
